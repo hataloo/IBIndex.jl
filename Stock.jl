@@ -73,8 +73,8 @@ function calculateNumberOfStocksToBuy(moneyAtDisposal::Float64, index::Index{T},
     totalMoney = moneyAtDisposal + sum([s.price * ((s.ticker in keys(currentPortfolio)) ? currentPortfolio[s.ticker] : 0) for (s,w) in index])
     for (stock, weight) in index
         currentNumber = (stock.ticker in keys(currentPortfolio)) ? currentPortfolio[stock.ticker] : 0
-        toBuy[stock.name] = Int(round(totalMoney*weight/stock.price)) - currentNumber
+        toBuy[stock.ticker] = Int(round(totalMoney*weight/stock.price)) - currentNumber
     end
-    moneyLeft = moneyAtDisposal - sum([s.price * toBuy[s.name] for (s,w) in index])
+    moneyLeft = moneyAtDisposal - sum([s.price * toBuy[s.ticker] for (s,w) in index])
     return toBuy, moneyLeft
 end

@@ -42,6 +42,6 @@ for product in productsInfo
 end
 
 
-#toBuy, moneyLeft = calculateNumberOfStocksToBuy(35000.0, IBIndex, currentPortfolio)
+toBuy, moneyLeft = calculateNumberOfStocksToBuy(35000.0, IBIndex, currentPortfolio)
 
-#newPortfolio = OrderedDict{String, Int64}([k => v + toBuy[k] for (k,v) in currentPortfolio])
+newPortfolio = OrderedDict{String, Int64}([k => v + toBuy[k] for (k,v) in currentPortfolio])

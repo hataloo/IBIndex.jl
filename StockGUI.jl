@@ -1,7 +1,8 @@
 using GLMakie
 include("StockParse.jl")
 #gui = Figure(resolution = (1800, 900))
-
+IBIndex = getIBIndex()
+currentPortfolio = readCurrentPortfolio()
 toBuy, moneyLeft = calculateNumberOfStocksToBuy(22500.0, IBIndex, currentPortfolio)
 
 newPortfolio = OrderedDict{String, Int64}([k => v + toBuy[k] for (k,v) in currentPortfolio])

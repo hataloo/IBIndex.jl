@@ -9,7 +9,7 @@ mutable struct IBPortfolioModel
     toBuy::OrderedDict{String,Int64}
     moneyLeft::Float64
     newPortfolio::OrderedDict{String,Int64}
-    IBPortfolioModel(moneyAtDisposal::Float64 = 10000.0; path = nothing) = begin
+    IBPortfolioModel(moneyAtDisposal::Float64 = 0.0; path = nothing) = begin
         ibIndex = getIBIndex()
         currentPortfolio = (path == nothing) ? readCurrentPortfolio() : readCurrentPortfolio(path)
         toBuy, moneyLeft = calculateNumberOfStocksToBuy(moneyAtDisposal, ibIndex, currentPortfolio)

@@ -63,8 +63,21 @@ function initPlotGrid!(viewer::IBIndexViewer)
     viewer.plotGrid[1:2,2] = Legend(viewer.fig, portfolioAx)
 end
 
+function getTableViewGridPositions(viewer::IBIndexViewer, numberOfVisibleOptions, vertical = true)
+    positions = Dict{Symbol,Any}()
+    if vertical
+        positions[:header] = [1,2:5]
+        positions[:stockButton] = [[viewer.tableLastViewable[]+2-i,3] for i = 1:numberOfVisibleOptions]
+        positions[:ownedLabel] = [[viewer.tableLastViewable[]+2-i,3] for i = 1:numberOfVisibleOptions]
+        positions[:toBuyLabel] = [[viewer.tableLastViewable[]+2-i,3] for i = 1:numberOfVisibleOptions]
+        positions[:newPortLabel] = [[viewer.tableLastViewable[]+2-i,3] for i = 1:numberOfVisibleOptions]
+    end
+    return positions
+end
+
 function initTableViewGrid!(viewer::IBIndexViewer, numberOfVisibleOptions)
     tableViewGrid = viewer.tableViewGrid
+    tablePos = getTableViewGridPositions(viewer, numberOfVisibleOptions, true)
     tableViewGrid[1,2:5] = [Label(viewer.fig, "Stock"), Label(viewer.fig, "Owned"), Label(viewer.fig, "To Buy"), Label(viewer.fig, "Result")]
     for i = 1:numberOfVisibleOptions
         stockLabel = lift(x -> "$(viewer.model.IBIndex[x+1-i][1].ticker)", viewer.tableLastViewable)

@@ -12,11 +12,11 @@ struct IBIndexViewer
     indexChanged::Observable{Any}
     portfolioChanged::Observable{Any}
     highlightedStock::Observable{Any}
-    IBIndexViewer(model::IBPortfolioModel; numberOfVisibleOptions = 8, resolution = (1600, 1000), numberOfPlusMinusButtons::Int64 = 3) = begin
+    IBIndexViewer(model::IBPortfolioModel; numberOfVisibleOptions = 6, resolution = (1600, 1000), numberOfPlusMinusButtons::Int64 = 3) = begin
         fig = Figure(resolution = resolution)
         plotGrid, tableViewGrid, modelControllerGrid = [GridLayout() for i = 1:3]
-        fig[1:4,1:2] = plotGrid
-        fig[1:2,3:4] = tableViewGrid
+        fig[1:2,1:4] = plotGrid
+        fig[3:4,1:2] = tableViewGrid
         fig[3:4,3:4] = modelControllerGrid
         viewer = new(model, fig, plotGrid, tableViewGrid, Node(numberOfVisibleOptions), 
         modelControllerGrid, Node(true), Node(true), Node(model.IBIndex[1][1].ticker))
@@ -32,25 +32,35 @@ end
 function initPlotGrid!(viewer::IBIndexViewer)
     IBIndex = viewer.model.IBIndex
     cmap = :grayyellow
-    viewer.plotGrid[1,1] = indexAx = Axis(viewer.fig, 
-        xticks = (1:length(IBIndex), [s.ticker for (s,w) in IBIndex]), 
-        xticklabelrotation = pi/2*0.7, title = "Current IB-Index")
-    indexVals = lift(x-> [100*w + rand() for (s,w) in IBIndex], viewer.indexChanged)
-    barplot!(indexAx, indexVals, color = indexVals, colormap = cmap)
-    viewer.plotGrid[2,1] = portfolioAx = Axis(viewer.fig, 
+    #viewer.plotGrid[1,1] = indexAx = Axis(viewer.fig, 
+    #    xticks = (1:length(IBIndex), [s.ticker for (s,w) in IBIndex]), 
+    #    xticklabelrotation = pi/2*0.7, title = "Current IB-Index")
+    indexVals = lift(x-> [100*w for (s,w) in IBIndex], viewer.indexChanged)
+    #barplot!(indexAx, indexVals, color = indexVals, colormap = cmap)
+    viewer.plotGrid[1:2,1] = portfolioAx = Axis(viewer.fig, 
         xticks = (1:length(IBIndex), [s.ticker for (s,w) in IBIndex]), 
         xticklabelrotation = pi/2*0.7, title = "Current portfolio distribution")
     portfolioVals = lift((x,y)-> begin
-                                totalPortfolioVal = sum([s.price * viewer.model.currentPortfolio[s.ticker] for (s,w) in IBIndex])
-                                port = [rand()+100 * s.price * viewer.model.currentPortfolio[s.ticker]/totalPortfolioVal for (s,w) in viewer.model.IBIndex]
+                                totalPortfolioVal = sum([s.price * viewer.model.currentPortfolio[s.ticker] for (s,w) in viewer.model.IBIndex])
+                                port = [100 * s.price * viewer.model.currentPortfolio[s.ticker]/totalPortfolioVal for (s,w) in viewer.model.IBIndex]
                                 return port
                             end,
-    viewer.portfolioChanged, viewer.indexChanged)
+                    viewer.portfolioChanged, viewer.indexChanged)
+    newPortfolioVals = lift((x,y)-> begin
+                                    totalPortfolioVal = sum([s.price * viewer.model.newPortfolio[s.ticker] for (s,w) in viewer.model.IBIndex])
+                                    port = [100 * s.price * viewer.model.newPortfolio[s.ticker]/totalPortfolioVal for (s,w) in viewer.model.IBIndex]
+                                    return port
+                                    end,
+                        viewer.portfolioChanged, viewer.indexChanged)
+    off = [-0.25, 0.0, 0.25]; barWidth = 0.22
     c = distinguishable_colors(2, [RGB(1.0,1.0,1.0), RGB(0.0,0.0,0.0)], dropseed = true)
-    barplot!(portfolioAx, [i-0.18 for i = 1:length(IBIndex)], portfolioVals, color = RGB(0.7,0.3,0.3),# colormap = cmap,
-    dodge = repeat([1], length(IBIndex)), width = 0.3)
-    barplot!(portfolioAx, [i+0.18 for i = 1:length(IBIndex)], indexVals, color = RGB(0.3,0.3,0.7),#, colormap = cmap,
-    dodge = repeat([2], length(IBIndex)), width = 0.3)
+    barplot!(portfolioAx, [i+off[1] for i = 1:length(IBIndex)], portfolioVals, color = RGB(0.7,0.3,0.3),# colormap = cmap,
+    dodge = repeat([1], length(IBIndex)), width = barWidth, label = "Current portfolio")
+    barplot!(portfolioAx, [i+off[2] for i = 1:length(IBIndex)], indexVals, color = RGB(0.3,0.3,0.7),#, colormap = cmap,
+    dodge = repeat([2], length(IBIndex)), width = barWidth, label = "Index distribution")
+    barplot!(portfolioAx, [i+off[3] for i = 1:length(IBIndex)], newPortfolioVals, color = RGB(0.9,0.6,0.0), 
+    dodge = repeat([3], length(IBIndex)), width = barWidth, label = "Resulting portfolio")
+    viewer.plotGrid[1:2,2] = Legend(viewer.fig, portfolioAx)
 end
 
 function initTableViewGrid!(viewer::IBIndexViewer, numberOfVisibleOptions)

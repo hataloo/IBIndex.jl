@@ -1,3 +1,4 @@
+using DataStructures: merge
 using GLMakie
 using Colors
 include("IBIndexModel.jl")
@@ -12,18 +13,19 @@ struct IBIndexViewer
     indexChanged::Observable{Any}
     portfolioChanged::Observable{Any}
     highlightedStock::Observable{Any}
-    IBIndexViewer(model::IBPortfolioModel; numberOfVisibleOptions = 6, resolution = (1600, 1000), numberOfPlusMinusButtons::Int64 = 3) = begin
+    IBIndexViewer(model::IBPortfolioModel; numberOfVisibleOptions = 4, resolution = (1600, 1000), 
+    numberOfPlusMinusButtons::Int64 = 3, horizontalTableView = true) = begin
         fig = Figure(resolution = resolution)
         plotGrid, tableViewGrid, modelControllerGrid = [GridLayout() for i = 1:3]
         fig[1:2,1:4] = plotGrid
-        fig[3:4,1:2] = tableViewGrid
-        fig[3:4,3:4] = modelControllerGrid
+        fig[3:4,1:4] = hgrid!(tableViewGrid, modelControllerGrid)
+        #fig[3:4,3:4] = modelControllerGrid
         viewer = new(model, fig, plotGrid, tableViewGrid, Node(numberOfVisibleOptions), 
         modelControllerGrid, Node(true), Node(true), Node(model.IBIndex[1][1].ticker))
         initPlotGrid!(viewer)
-        initTableViewGrid!(viewer, numberOfVisibleOptions)
+        initTableViewGrid!(viewer, numberOfVisibleOptions, horizontalTableView)
         initModelControllerGrid!(viewer, numberOfPlusMinusButtons)
-        colsize!(fig.layout,1,Relative(0.6))
+        #colsize!(fig.layout,1,Relative(0.6))
         return viewer
     end
 end
@@ -63,36 +65,45 @@ function initPlotGrid!(viewer::IBIndexViewer)
     viewer.plotGrid[1:2,2] = Legend(viewer.fig, portfolioAx)
 end
 
-function getTableViewGridPositions(viewer::IBIndexViewer, numberOfVisibleOptions, vertical = true)
+function getTableViewGridPositions(viewer::IBIndexViewer, numberOfVisibleOptions, horizontal = false)
     positions = Dict{Symbol,Any}()
-    if vertical
+    if horizontal
+        positions[:header] = [2:5, 1]
+        positions[:stockButton] = [[2, viewer.tableLastViewable[]+2-i] for i = 1:numberOfVisibleOptions]
+        positions[:ownedLabel] = [[3, viewer.tableLastViewable[]+2-i] for i = 1:numberOfVisibleOptions]
+        positions[:toBuyLabel] = [[4, viewer.tableLastViewable[]+2-i] for i = 1:numberOfVisibleOptions]
+        positions[:newPortLabel] = [[5, viewer.tableLastViewable[]+2-i] for i = 1:numberOfVisibleOptions]
+        positions[:slider] = [1, 2:(viewer.tableLastViewable[]+1)]
+    else
         positions[:header] = [1,2:5]
-        positions[:stockButton] = [[viewer.tableLastViewable[]+2-i,3] for i = 1:numberOfVisibleOptions]
+        positions[:stockButton] = [[viewer.tableLastViewable[]+2-i,2] for i = 1:numberOfVisibleOptions]
         positions[:ownedLabel] = [[viewer.tableLastViewable[]+2-i,3] for i = 1:numberOfVisibleOptions]
-        positions[:toBuyLabel] = [[viewer.tableLastViewable[]+2-i,3] for i = 1:numberOfVisibleOptions]
-        positions[:newPortLabel] = [[viewer.tableLastViewable[]+2-i,3] for i = 1:numberOfVisibleOptions]
-    end
+        positions[:toBuyLabel] = [[viewer.tableLastViewable[]+2-i,4] for i = 1:numberOfVisibleOptions]
+        positions[:newPortLabel] = [[viewer.tableLastViewable[]+2-i,5] for i = 1:numberOfVisibleOptions]
+        positions[:slider] = [2:(viewer.tableLastViewable[]+1),1]
+    end 
     return positions
 end
 
-function initTableViewGrid!(viewer::IBIndexViewer, numberOfVisibleOptions)
+function initTableViewGrid!(viewer::IBIndexViewer, numberOfVisibleOptions, horizontalTable)
     tableViewGrid = viewer.tableViewGrid
-    tablePos = getTableViewGridPositions(viewer, numberOfVisibleOptions, true)
-    tableViewGrid[1,2:5] = [Label(viewer.fig, "Stock"), Label(viewer.fig, "Owned"), Label(viewer.fig, "To Buy"), Label(viewer.fig, "Result")]
+    tablePos = getTableViewGridPositions(viewer, numberOfVisibleOptions, horizontalTable)
+    tableViewGrid[tablePos[:header]...] = [Label(viewer.fig, "Stock"), Label(viewer.fig, "Owned"), Label(viewer.fig, "To Buy"), Label(viewer.fig, "Result")]
     for i = 1:numberOfVisibleOptions
         stockLabel = lift(x -> "$(viewer.model.IBIndex[x+1-i][1].ticker)", viewer.tableLastViewable)
-        tableViewGrid[viewer.tableLastViewable[]+2-i, 2] = stockButton = Button(viewer.fig, label = stockLabel)
+        tableViewGrid[tablePos[:stockButton][i]...] = stockButton = Button(viewer.fig, label = stockLabel)
         on(stockButton.clicks) do x
             viewer.highlightedStock[] =  viewer.model.IBIndex[viewer.tableLastViewable[]+1-i][1].ticker
         end
         ownedLabel = lift((x,y) -> "$(viewer.model.currentPortfolio[viewer.model.IBIndex[x+1-i][1].ticker])", viewer.tableLastViewable, viewer.portfolioChanged)
-        tableViewGrid[viewer.tableLastViewable[]+2-i, 3] = Label(viewer.fig, ownedLabel)
+        tableViewGrid[tablePos[:ownedLabel][i]...] = Label(viewer.fig, ownedLabel)
         toBuyLabel = lift((x,y) -> "$(viewer.model.toBuy[viewer.model.IBIndex[x+1-i][1].ticker])", viewer.tableLastViewable, viewer.portfolioChanged)
-        tableViewGrid[viewer.tableLastViewable[]+2-i, 4] = Label(viewer.fig, toBuyLabel)
+        tableViewGrid[tablePos[:toBuyLabel][i]...] = Label(viewer.fig, toBuyLabel)
         newPortLabel = lift((x,y) -> "$(viewer.model.newPortfolio[viewer.model.IBIndex[x+1-i][1].ticker])", viewer.tableLastViewable, viewer.portfolioChanged)
-        tableViewGrid[viewer.tableLastViewable[]+2-i, 5] = Label(viewer.fig, newPortLabel)
+        tableViewGrid[tablePos[:newPortLabel][i]...] = Label(viewer.fig, newPortLabel)
     end
-    tableViewGrid[2:end,1] = slider = Slider(viewer.fig, range = (length(viewer.model.IBIndex):(-1):numberOfVisibleOptions), horizontal = false, startvalue = numberOfVisibleOptions)
+    range = (!horizontalTable) ? (length(viewer.model.IBIndex):(-1):numberOfVisibleOptions) : numberOfVisibleOptions:length(viewer.model.IBIndex)
+    tableViewGrid[tablePos[:slider]...] = slider = Slider(viewer.fig, range = range, horizontal = horizontalTable, startvalue = numberOfVisibleOptions)
     prevSliderVal = Node(1); sliderLock = Node(true)
     on(slider.value) do x
         if sliderLock[]
@@ -120,14 +131,21 @@ function initModelControllerGrid!(viewer::IBIndexViewer, numberOfPlusMinusButton
             viewer.portfolioChanged[] = true
         end
     end
-    grid[3,1] = refreshButton = Button(viewer.fig, label = "Refresh IB-Index")
+    refreshButton = Button(viewer.fig, label = "Refresh IB-Index")
     on(refreshButton.clicks) do x viewer.indexChanged[] = true end
+    mergeButton = Button(viewer.fig, label = "Merge result")
+    grid[3,:] = hgrid!(refreshButton, mergeButton)
+    on(mergeButton.clicks) do x mergeNewIntoCurrent!(viewer.model); viewer.portfolioChanged[] = true end
     capitalSlider = labelslider!(viewer.fig, "Capital:", -20000:500:20000)
+    println(capitalSlider)
+    capitalSlider.valuelabel.tellwidth = false
     on(capitalSlider.slider.value) do x
         setMoneyAtDisposal!(viewer.model, Float64(x))
         viewer.portfolioChanged[] = true
     end
-    grid[4,1:4] = capitalSlider.layout
+    grid[4,1:2] = capitalSlider.label
+    grid[5,1:4] = capitalSlider.slider
+    grid[4,3:4] = capitalSlider.valuelabel
 end
 
 view = IBIndexViewer(IBPortfolioModel())

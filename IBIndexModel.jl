@@ -42,4 +42,7 @@ function setMoneyAtDisposal!(model::IBPortfolioModel, moneyAtDisposal::Float64)
     recalculatePortfolioModel!(model)
 end
 
-
+function mergeNewIntoCurrent!(model::IBPortfolioModel)
+    model.currentPortfolio = model.newPortfolio
+    recalculatePortfolioModel!(model)
+end

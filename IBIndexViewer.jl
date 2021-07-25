@@ -13,7 +13,7 @@ struct IBIndexViewer
     indexChanged::Observable{Any}
     portfolioChanged::Observable{Any}
     highlightedStock::Observable{Any}
-    IBIndexViewer(model::IBPortfolioModel; numberOfVisibleOptions = 4, resolution = (1600, 1000), 
+    IBIndexViewer(model::IBPortfolioModel; numberOfVisibleOptions = 8, resolution = (1600, 1000), 
     numberOfPlusMinusButtons::Int64 = 3, horizontalTableView = true) = begin
         fig = Figure(resolution = resolution)
         plotGrid, tableViewGrid, modelControllerGrid = [GridLayout() for i = 1:3]
@@ -30,7 +30,6 @@ struct IBIndexViewer
     end
 end
 
-#Remove rand() later !!!
 function initPlotGrid!(viewer::IBIndexViewer)
     IBIndex = viewer.model.IBIndex
     cmap = :grayyellow
@@ -137,7 +136,6 @@ function initModelControllerGrid!(viewer::IBIndexViewer, numberOfPlusMinusButton
     grid[3,:] = hgrid!(refreshButton, mergeButton)
     on(mergeButton.clicks) do x mergeNewIntoCurrent!(viewer.model); viewer.portfolioChanged[] = true end
     capitalSlider = labelslider!(viewer.fig, "Capital:", -20000:500:20000)
-    println(capitalSlider)
     capitalSlider.valuelabel.tellwidth = false
     on(capitalSlider.slider.value) do x
         setMoneyAtDisposal!(viewer.model, Float64(x))
@@ -146,6 +144,15 @@ function initModelControllerGrid!(viewer::IBIndexViewer, numberOfPlusMinusButton
     grid[4,1:2] = capitalSlider.label
     grid[5,1:4] = capitalSlider.slider
     grid[4,3:4] = capitalSlider.valuelabel
+    saveButton = Button(viewer.fig, label = "Save Owned")
+    on(saveButton.clicks) do x
+        if isa(viewer.model.path, Nothing) 
+            writeCurrentPortfolio(viewer.model.currentPortfolio)
+        else
+            writeCurrentPortfolio(viewer.model.currentPortfolio, viewer.model.path)
+        end
+    end
+    grid[6,1:2] = saveButton
 end
 
 view = IBIndexViewer(IBPortfolioModel())

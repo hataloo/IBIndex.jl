@@ -9,12 +9,13 @@ mutable struct IBPortfolioModel
     toBuy::OrderedDict{String,Int64}
     moneyLeft::Float64
     newPortfolio::OrderedDict{String,Int64}
+    path::Union{String,Nothing}
     IBPortfolioModel(moneyAtDisposal::Float64 = 0.0; path = nothing) = begin
         ibIndex = getIBIndex()
         currentPortfolio = (path == nothing) ? readCurrentPortfolio() : readCurrentPortfolio(path)
         toBuy, moneyLeft = calculateNumberOfStocksToBuy(moneyAtDisposal, ibIndex, currentPortfolio)
         newPortfolio = calculateNewPortfolio(currentPortfolio, toBuy)
-        new(ibIndex, moneyAtDisposal, currentPortfolio, toBuy, moneyLeft, newPortfolio)
+        new(ibIndex, moneyAtDisposal, currentPortfolio, toBuy, moneyLeft, newPortfolio, path)
     end
 end
 

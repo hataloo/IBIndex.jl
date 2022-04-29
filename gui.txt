@@ -1,0 +1,28 @@
+*barplot
+	- Exakt indexvikter
+	- Nuvarande indexvikter
+	- Förändring vid köp
+
+* manuellt ändra nuvarande portfölj
+
+* Hämta uppdaterade vikter
+
+-------------------
+
+Modell:
+	IBIndex,
+	moneyAtDisposal,
+	currentPortfolio,
+	--> toBuy, moneyLeft, newPortfolio
+
+View:
+	--> Tabell, barplots
+
+Controller:
+	--> +/-, refresh, recalculate, changeMoneyAtDisposal,
+	savePortfolio, purchase
+
+BBTT
+BBTT
+BBCC
+BBCC

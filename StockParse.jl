@@ -27,7 +27,7 @@ function readCurrentPortfolio(path = "portfolio.csv")
     return currentPortfolio
 end
 
-function writeCurrentPortfolio(currentPortfolio::AbstractDict{String,Int64}, path = "portfolio1.csv")
+function writeCurrentPortfolio(currentPortfolio::AbstractDict{String,Int64}, path = "portfolio.csv")
     open(path, "w") do f
         for (ticker, owned) in currentPortfolio
             write(f, ticker * ",\"$owned\"\n")

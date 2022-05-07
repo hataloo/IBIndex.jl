@@ -20,8 +20,8 @@ struct IBIndexViewer
         fig[1:2,1:4] = plotGrid
         fig[3:4,1:4] = hgrid!(tableViewGrid, modelControllerGrid)
         #fig[3:4,3:4] = modelControllerGrid
-        viewer = new(model, fig, plotGrid, tableViewGrid, Node(numberOfVisibleOptions), 
-        modelControllerGrid, Node(true), Node(true), Node(model.IBIndex[1][1].ticker))
+        viewer = new(model, fig, plotGrid, tableViewGrid, Observable(numberOfVisibleOptions), 
+        modelControllerGrid, Observable(true), Observable(true), Observable(model.IBIndex[1][1].ticker))
         initPlotGrid!(viewer)
         initTableViewGrid!(viewer, numberOfVisibleOptions, horizontalTableView)
         initModelControllerGrid!(viewer, numberOfPlusMinusButtons)
@@ -58,9 +58,9 @@ function initPlotGrid!(viewer::IBIndexViewer)
     barplot!(portfolioAx, [i+off[1] for i = 1:length(IBIndex)], portfolioVals, color = RGB(0.7,0.3,0.3),# colormap = cmap,
     dodge = repeat([1], length(IBIndex)), width = barWidth, label = "Current portfolio")
     barplot!(portfolioAx, [i+off[2] for i = 1:length(IBIndex)], indexVals, color = RGB(0.3,0.3,0.7),#, colormap = cmap,
-    dodge = repeat([2], length(IBIndex)), width = barWidth, label = "Index distribution")
+    dodge = repeat([1], length(IBIndex)), width = barWidth, label = "Index distribution")
     barplot!(portfolioAx, [i+off[3] for i = 1:length(IBIndex)], newPortfolioVals, color = RGB(0.9,0.6,0.0), 
-    dodge = repeat([3], length(IBIndex)), width = barWidth, label = "Resulting portfolio")
+    dodge = repeat([1], length(IBIndex)), width = barWidth, label = "Resulting portfolio")
     viewer.plotGrid[1:2,2] = Legend(viewer.fig, portfolioAx)
 end
 
@@ -103,7 +103,7 @@ function initTableViewGrid!(viewer::IBIndexViewer, numberOfVisibleOptions, horiz
     end
     range = (!horizontalTable) ? (length(viewer.model.IBIndex):(-1):numberOfVisibleOptions) : numberOfVisibleOptions:length(viewer.model.IBIndex)
     tableViewGrid[tablePos[:slider]...] = slider = Slider(viewer.fig, range = range, horizontal = horizontalTable, startvalue = numberOfVisibleOptions)
-    prevSliderVal = Node(1); sliderLock = Node(true)
+    prevSliderVal = Observable(1); sliderLock = Observable(true)
     on(slider.value) do x
         if sliderLock[]
             sliderLock[] = false

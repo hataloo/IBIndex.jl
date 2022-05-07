@@ -8,7 +8,10 @@ toBuy, moneyLeft = calculateNumberOfStocksToBuy(22500.0, IBIndex, currentPortfol
 newPortfolio = OrderedDict{String, Int64}([k => v + toBuy[k] for (k,v) in currentPortfolio])
 
 
-scene, layout = layoutscene(resolution = (1600,1200))
+#scene, layout = layoutscene(resolution = (1600,1200))
+fig = Figure(resolution = (1600,1200))
+scene = fig.scene
+layout = fig.layout
 
 buttonLayout = GridLayout()
 scrollButtonLayout = GridLayout()
@@ -17,8 +20,7 @@ scrollButtonLayout = GridLayout()
 
 layout[1:1,2] = buttonLayout
 
-highlightedStockTicker = Node(IBIndex[1][1].ticker)
-
+highlightedStockTicker = Observable(IBIndex[1][1].ticker)
 numberOfVisibleOptions = 8
 for i = 1:numberOfVisibleOptions
     stock, weight = IBIndex[i]
@@ -36,8 +38,8 @@ buttonLayout[1,2:5] = [Label(scene, "Stock"), Label(scene, "Owned"), Label(scene
 #rowsize!(buttonLayout,3, Relative(numberOfVisibleOptions/(numberOfVisibleOptions+1)/2))
 
 
-scrollButtonVisible = Node([1,numberOfVisibleOptions])
-scrollButtonLock = Node(true)
+scrollButtonVisible = Observable([1,numberOfVisibleOptions])
+scrollButtonLock = Observable(true)
 function updateScrollList()
     for (i,j) in enumerate(scrollButtonVisible[][1]:scrollButtonVisible[][2])
         button = content(buttonLayout[i+1,2])
@@ -53,7 +55,7 @@ end
 
 buttonLayout[2:end,1] = slider = Slider(scene, range = (length(IBIndex)):(-1):(numberOfVisibleOptions), horizontal = false, startvalue = (1))
 prevSliderVal = slider.value[]
-sliderLock = Node(true)
+sliderLock = Observable(true)
 on(slider.value) do x
     if sliderLock[]
         println(x)
@@ -100,7 +102,7 @@ layout[1,1] = indexBarAx
 
 portfolioBarAx = Axis(scene, xticks = (1:length(IBIndex), [s.ticker for (s,w) in IBIndex]), xticklabelrotation = pi/2*0.7, title = "Current Portfolio distribution")
 
-totalPortfolioValue = Node(sum([s.price * currentPortfolio[s.ticker] for (s,w) in IBIndex]))
+totalPortfolioValue = Observable(sum([s.price * currentPortfolio[s.ticker] for (s,w) in IBIndex]))
 portfolioDistribution = lift(x->[100*s.price*currentPortfolio[s.ticker]/x for (s,w) in IBIndex], totalPortfolioValue)
 portfolioBarAx
 barplot!(portfolioBarAx,portfolioDistribution, color = 1:length(IBIndex))
